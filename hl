@@ -1,0 +1,87 @@
+#!/usr/bin/env perl
+use 5.006;
+use strict;
+use warnings;
+use List::Util 'first';
+use Term::ANSIColor 'color';
+use Getopt::Std 'getopts';
+
+sub paint_string {
+	my ( $line, @region ) = @_;
+	return $line unless @region;
+
+	my @char = $line =~ /(.)/g;
+	my $prev_color;
+	my $out = '';
+
+	for my $i ( 0 .. $#char ) {
+		my $r = first { $_->{'start'} <= $i and $_->{'end'} >= $i } @region;
+		my $color = $r && $r->{'color'};
+
+		$out .= color 'reset' if $prev_color and not ( $color and $prev_color eq $color );
+		$out .= color $color if $color;
+		$out .= $char[$i];
+
+		$prev_color = $color;
+	}
+
+	$out .= color 'reset' if $prev_color;
+
+	return $out;
+}
+
+sub regions {
+	my ( $s, $e, @color ) = @_;
+	map +{ start => $s->[$_], end => $e->[$_] - 1, color => $color[$_] || $color[0] },
+	grep { defined( $s->[$_] && $e->[$_] ) }
+	0 .. $#$s;
+}
+
+getopts( 'c:' ) && ( my $rx = shift )
+	or die "usage: $0 [ -c color ] pattern [ file... ] [ < input ]\n", <DATA>;
+
+my @color = split /,\s*/, our $opt_c || $ENV{'HILIGHT_COLORS'} || 'bold red';
+
+$rx = eval { qr/$rx/ }
+	or die map { s/ at \S+ line \d+.*//; $_ } my $copy = $@;
+
+while ( <> ) {
+	chomp;
+	my @region;
+	push @region, regions \@-, \@+, @color while m{$rx}g;
+	print paint_string( $_, reverse @region ), "\n";
+}
+
+__END__
+
+    Patterns are perl regular expressions. This means
+    that the tool is a potential foot gun. However the
+    risk is no more foot-gunny than your access to
+    perl -e so there is no need to protect against it.
+
+    Your pattern will be applied to each line of input.
+    Well, technically, each line minus the newline char.
+
+    The pattern match is done with a /g flag and when it
+    matches multiple times, the later matches always take
+    precidence over the earlier matches (mostly an issue
+    when using look-around assertions which contain some
+    capturing parens, allowing matches to paint regions
+    "outside" the range matched by the rest of the regex.
+
+    You can use capturing parens in your pattern.
+    If you provide multiple atrributes via the -c option,
+    (using commas to separate the multiple attributes)
+    the first will be used to color the portion matching
+    the pattern, the second will color the portion matching
+    the first capturing parens, the third will color the
+    portion matching the second capturing parens, etc.
+    Extra colors will be ignored. Extra parens will be
+    colored the same as the non-captured matching text.
+    You can export HILIGHT_COLORS to avoid having to set
+    -c with your favorite colors every time. If both are
+    provided, -c takes precidence.
+
+        # for example, in your .bashrc:
+        export HILIGHT_COLORS="cyan,green,yellow,magenta,blue,red,blue on_yellow,red on_white, bold green"
+
