@@ -54,10 +54,7 @@ while ( <> ) {
 
 __END__
 
- Patterns are perl regular expressions. This means
- that the tool is a potential foot gun. However the
- risk is no more foot-gunny than your access to
- perl -e so there is no need to protect against it.
+ Patterns are perl regular expressions.
 
  Your pattern will be applied to each line of input.
  Well, technically, each line minus the newline char.
