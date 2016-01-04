@@ -37,10 +37,10 @@ sub regions {
 	0 .. $#$s;
 }
 
-getopts( 'c:' ) && ( my $rx = shift )
-	or die "usage: $0 [ -c color ] pattern [ file... ] [ < input ]\n", <DATA>;
+getopts( 'xc:' ) && ( my $rx = shift )
+	or die "usage: $0 [ -c color ] [ -x ] pattern [ file... ] [ < input ]\n", <DATA>;
 
-my @color = split /\s*,\s*/, our $opt_c || $ENV{'HILIGHT_COLORS'} || 'bold red';
+my @color = split /\s*,\s*/, our $opt_c || $ENV{'HILIGHT_COLORS'} || 'bold green';
 
 $rx = eval { qr/$rx/ }
 	or die map { s/ at \S+ line \d+.*//; $_ } my $copy = $@;
@@ -49,6 +49,7 @@ while ( <> ) {
 	chomp;
 	my @region;
 	push @region, regions \@-, \@+, @color while m{$rx}g;
+	next if our $opt_x and not @region;
 	print paint_string( $_, reverse @region ), "\n";
 }
 
@@ -57,6 +58,8 @@ __END__
  The pattern is a Perl regular expression which will
  be applied to each line of input, repeatedly (using
  the /g flag), after removing the newline.
+
+ The -x switch suppresses lines without any matches.
 
  The -c switch specifies the colour to highlight the
  matched portion(s) of the line. By default this is
