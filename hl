@@ -40,7 +40,7 @@ sub regions {
 getopts( 'c:' ) && ( my $rx = shift )
 	or die "usage: $0 [ -c color ] pattern [ file... ] [ < input ]\n", <DATA>;
 
-my @color = split /,\s*/, our $opt_c || $ENV{'HILIGHT_COLORS'} || 'bold red';
+my @color = split /\s*,\s*/, our $opt_c || $ENV{'HILIGHT_COLORS'} || 'bold red';
 
 $rx = eval { qr/$rx/ }
 	or die map { s/ at \S+ line \d+.*//; $_ } my $copy = $@;
